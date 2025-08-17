@@ -13,7 +13,7 @@ export class UserAuthDto {
   @MinLength(4)
   @MaxLength(12)
   @IsNotEmpty()
-  username: string;
+  email: string;
 
   @IsString()
   @MinLength(8)

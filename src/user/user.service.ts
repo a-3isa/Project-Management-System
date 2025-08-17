@@ -13,10 +13,6 @@ export class UserService {
     private jwtService: JwtService,
   ) {}
 
-  me(user: User) {
-    return this.userRepository.findOne({ where: user });
-  }
-
   async findTasks(id: string) {
     const user = await this.userRepository.findOne({ where: { id } });
     console.log(user);
