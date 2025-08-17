@@ -12,16 +12,31 @@ import {
 } from 'typeorm';
 
 @Entity()
-@Unique(['username']) // ✅ Ensures 'username' is unique
+@Unique(['email']) // ✅ Ensures 'username' is unique
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  username: string;
+  email: string;
 
-  @Column({ select: false })
+  @Column()
   password: string;
+
+  @Column({ default: false })
+  isVerified: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  otp: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  otpExpiry: Date | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  resetToken: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  resetTokenExpiry: Date | null;
 
   @Column()
   role: string;
