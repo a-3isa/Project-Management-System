@@ -34,7 +34,7 @@ This is a NestJS-based backend application that serves as the API for a project 
 1. Clone the repository:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/a-3isa/Project-Management-System
    cd project
    ```
 
