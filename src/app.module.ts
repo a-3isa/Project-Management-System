@@ -11,6 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -19,37 +20,45 @@ import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
     ProjectModule,
     TaskModule,
     CommentModule,
-    MailerModule.forRoot({
-      transport: {
-        host: 'live.smtp.mailtrap.io',
-        port: 587,
-        secure: false, // upgrade later with STARTTLS
-        auth: {
-          user: 'api',
-          pass: 'a7f3527608f1e85d2fa34f2d9947d038',
-        },
-      },
-      defaults: {
-        from: '"nest-modules" <modules@nestjs.com>',
-      },
-      template: {
-        dir: process.cwd() + '/templates/',
-        adapter: new PugAdapter(), // or new PugAdapter()
-        options: {
-          strict: true,
-        },
-      },
+    ConfigModule.forRoot({
+      isGlobal: true, // make .env available everywhere
     }),
 
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      username: 'postgres',
-      password: '0000',
-      port: 5432,
-      database: 'project-management-system',
-      autoLoadEntities: true,
-      synchronize: true,
+    MailerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        transport: {
+          host: config.get<string>('MAIL_HOST'),
+          port: config.get<number>('MAIL_PORT'),
+          secure: false,
+          auth: {
+            user: config.get<string>('MAIL_USER'),
+            pass: config.get<string>('MAIL_PASS'),
+          },
+        },
+        defaults: {
+          from: config.get<string>('MAIL_FROM'),
+        },
+        template: {
+          dir: process.cwd() + '/templates/',
+          adapter: new PugAdapter(),
+          options: { strict: true },
+        },
+      }),
+    }),
+
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'postgres',
+        host: config.get<string>('DB_HOST'),
+        port: config.get<number>('DB_PORT'),
+        username: config.get<string>('DB_USERNAME'),
+        password: config.get<string>('DB_PASSWORD'),
+        database: config.get<string>('DB_NAME'),
+        autoLoadEntities: true,
+        synchronize: true,
+      }),
     }),
   ],
   controllers: [AppController],
