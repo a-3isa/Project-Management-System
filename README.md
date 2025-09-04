@@ -48,7 +48,6 @@ This is a NestJS-based backend application that serves as the API for a project 
 1. **Database Setup**:
    - Ensure PostgreSQL is installed and running
    - Create a database named `project-management-system`
-   - Update database credentials in `src/app.module.ts` if needed
 
 2. **Environment Variables**:
    - Create a `.env` file in the root directory
@@ -56,11 +55,23 @@ This is a NestJS-based backend application that serves as the API for a project 
      ```
      PORT=3000
      JWT_SECRET=your_jwt_secret_here
+     JWT_EXPIRES_IN=3600
+     DB_HOST=localhost
+     DB_PORT=5432
+     DB_USERNAME=your_db_username
+     DB_PASSWORD=your_db_password
+     DB_NAME=project-management-system
+     MAIL_HOST=smtp.mailtrap.io
+     MAIL_PORT=2525
+     MAIL_USER=your_mail_user
+     MAIL_PASS=your_mail_pass
+     MAIL_FROM=noreply@yourapp.com
      ```
 
 3. **Email Configuration**:
-   - The email service is configured to use Mailtrap in `src/app.module.ts`
-   - Update the SMTP credentials if using a different email service
+   - The email service is configured using environment variables
+   - Templates are stored in the `templates/` directory (create if not exists)
+   - Update the SMTP credentials in `.env` if using a different email service
 
 ## Running the Application
 
