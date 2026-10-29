@@ -1,192 +1,97 @@
-# Project Management System Backend
+# Project Management System API
 
-A robust backend API built with NestJS for managing projects, tasks, users, and comments. This application provides a complete project management solution with authentication, email verification, and role-based access control.
-
-## Description
-
-This is a NestJS-based backend application that serves as the API for a project management system. It allows users to create and manage projects, assign tasks, add comments, and collaborate effectively. The system includes user authentication with JWT tokens, email verification via OTP, and password reset functionality.
+A NestJS backend for managing projects, tasks and task comments, with JWT authentication, role-based access, and email OTP verification and password reset.
 
 ## Features
 
-- **User Management**: User registration, login, email verification, and password reset
-- **Project Management**: Create, update, delete projects and manage project members
-- **Task Management**: Create and manage tasks within projects
-- **Comment System**: Add comments to tasks for collaboration
-- **Authentication & Authorization**: JWT-based authentication with role-based access control
-- **Email Integration**: OTP verification and password reset via email
-- **Database Integration**: PostgreSQL with TypeORM for data persistence
+- **Users**: admin-created registration, email verification by OTP, login, password reset
+- **Projects**: create, update, delete, and add members
+- **Tasks**: create tasks inside projects, assign them, list a user's tasks
+- **Comments**: discuss tasks
+- **Security**: JWT + Passport, role-based guards, DTO validation (class-validator)
+- **Email**: OTP and reset mails via `@nestjs-modules/mailer` with Pug templates
 
-## Tech Stack
+## Tech stack
 
-- **Framework**: NestJS
-- **Language**: TypeScript
-- **Database**: PostgreSQL
-- **ORM**: TypeORM
-- **Authentication**: JWT, Passport
-- **Email Service**: @nestjs-modules/mailer with Pug templates
-- **Validation**: class-validator, class-transformer
-- **Testing**: Jest
-- **Linting**: ESLint
-- **Code Formatting**: Prettier
+NestJS, TypeScript, PostgreSQL, TypeORM, Passport/JWT, Nodemailer (Pug templates), Jest, ESLint, Prettier.
 
-## Installation
+## Getting started
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/a-3isa/Project-Management-System
-   cd project
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-## Setup
-
-1. **Database Setup**:
-   - Ensure PostgreSQL is installed and running
-   - Create a database named `project-management-system`
-
-2. **Environment Variables**:
-   - Create a `.env` file in the root directory
-   - Add the following variables:
-     ```
-     PORT=3000
-     JWT_SECRET=your_jwt_secret_here
-     JWT_EXPIRES_IN=3600
-     DB_HOST=localhost
-     DB_PORT=5432
-     DB_USERNAME=your_db_username
-     DB_PASSWORD=your_db_password
-     DB_NAME=project-management-system
-     MAIL_HOST=smtp.mailtrap.io
-     MAIL_PORT=2525
-     MAIL_USER=your_mail_user
-     MAIL_PASS=your_mail_pass
-     MAIL_FROM=noreply@yourapp.com
-     ```
-
-3. **Email Configuration**:
-   - The email service is configured using environment variables
-   - Templates are stored in the `templates/` directory (create if not exists)
-   - Update the SMTP credentials in `.env` if using a different email service
-
-## Running the Application
-
-### Development
+Prerequisites: Node.js 18+, PostgreSQL, an SMTP account (Mailtrap works for development).
 
 ```bash
-npm run start:dev
+git clone https://github.com/a-3isa/Project-Management-System
+cd Project-Management-System
+npm install
 ```
 
-### Production
+Create a database named `project-management-system`, then add a `.env` file in the project root:
+
+```env
+PORT=3000
+JWT_SECRET=change-me
+JWT_EXPIRES_IN=3600
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=your_db_username
+DB_PASSWORD=your_db_password
+DB_NAME=project-management-system
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USER=your_mail_user
+MAIL_PASS=your_mail_pass
+MAIL_FROM=noreply@yourapp.com
+```
 
 ```bash
-npm run build
-npm run start:prod
+npm run start:dev                      # development
+npm run build && npm run start:prod    # production
 ```
 
-The application will start on `http://localhost:3000` by default.
+The API runs on `http://localhost:3000`.
 
-## API Endpoints
+## API
 
-### Authentication
+**Auth**
+- `POST /auth/register` register a user (admin only)
+- `POST /auth/verify-otp` verify email with OTP
+- `POST /auth/login`
+- `POST /auth/forgot-password`
+- `POST /auth/reset-password`
 
-- `POST /auth/register` - Register a new user (Admin only)
-- `POST /auth/verify-otp` - Verify email with OTP
-- `POST /auth/login` - User login
-- `POST /auth/forgot-password` - Request password reset
-- `POST /auth/reset-password` - Reset password with token
+**Users**
+- `GET /users/me`, `GET /users`, `GET /users/:id/tasks`, `DELETE /users/:id`
 
-### Users
+**Projects**
+- `POST /projects/create`, `GET /projects`, `GET /projects/:id`, `PATCH /projects/:id`, `DELETE /projects/:id`
+- `POST /projects/:id/add-user/:userId`
+- `POST /projects/:projectId/tasks`
 
-- `GET /users/me` - Get current user info
-- `GET /users` - Get all users
-- `GET /users/:id/tasks` - Get tasks for a specific user
-- `DELETE /users/:id` - Delete a user
+**Tasks and comments**
+- `GET|PATCH|DELETE /tasks/:id`
+- `POST|GET /tasks/:taskId/comments`
 
-### Projects
+## Structure
 
-- `POST /projects/create` - Create a new project
-- `POST /projects/:id/add-user/:userId` - Add user to project
-- `POST /projects/:projectId/tasks` - Add task to project
-- `GET /projects` - Get all projects
-- `GET /projects/:id` - Get project by ID
-- `PATCH /projects/:id` - Update project
-- `DELETE /projects/:id` - Delete project
+```
+src/
+  auth/      login, OTP, password reset, JWT strategy
+  user/      user entity and endpoints
+  project/   projects and membership
+  task/      tasks
+  comment/   task comments
+```
 
-### Tasks
-
-- `GET /tasks/:id` - Get task by ID
-- `PATCH /tasks/:id` - Update task
-- `DELETE /tasks/:id` - Delete task
-- `POST /tasks/:taskId/comments` - Add comment to task
-- `GET /tasks/:taskId/comments` - Get comments for task
+Entities: User, Project, Task, Comment.
 
 ## Testing
 
 ```bash
-# Unit tests
 npm run test
-
-# E2E tests
 npm run test:e2e
-
-# Test coverage
 npm run test:cov
 ```
 
-## Project Structure
-
-```
-src/
-├── app.controller.ts      # Main app controller
-├── app.module.ts          # Main app module
-├── app.service.ts         # Main app service
-├── auth/                  # Authentication module
-│   ├── auth.controller.ts
-│   ├── auth.module.ts
-│   ├── auth.service.ts
-│   ├── dto/
-│   ├── entities/
-│   └── jwt.strategy.ts
-├── user/                  # User management module
-│   ├── user.controller.ts
-│   ├── user.module.ts
-│   ├── user.service.ts
-│   ├── dto/
-│   └── entities/
-├── project/               # Project management module
-│   ├── project.controller.ts
-│   ├── project.module.ts
-│   ├── project.service.ts
-│   ├── dto/
-│   └── entities/
-├── task/                  # Task management module
-│   ├── task.controller.ts
-│   ├── task.module.ts
-│   ├── task.service.ts
-│   ├── dto/
-│   └── entities/
-└── comment/               # Comment module
-    ├── comment.controller.ts
-    ├── comment.module.ts
-    ├── comment.service.ts
-    ├── dto/
-    └── entities/
-```
-
-## Database Schema
-
-The application uses the following main entities:
-
-- **User**: Stores user information, authentication data, and relationships
-- **Project**: Represents projects with title and associated users/tasks
-- **Task**: Individual tasks within projects with assignments and comments
-- **Comment**: Comments on tasks for collaboration
-
 ## License
 
-This project is licensed under the UNLICENSED license.
+UNLICENSED.
