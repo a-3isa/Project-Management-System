@@ -89,7 +89,6 @@ export class AuthService {
     });
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      console.log(password, user.password);
       const payload = { email, typ: 'access' };
       const accessToken: string = this.jwtService.sign(payload);
       return { accessToken };
@@ -148,14 +147,10 @@ export class AuthService {
       ) {
         throw new UnauthorizedException('Invalid or expired token');
       }
-      console.log(user.password);
-      console.log(newPassword);
       user.password = await bcrypt.hash(newPassword, 10);
-      console.log(user.password);
       user.resetToken = null;
       user.resetTokenExpiry = null;
-      const suc = await this.authRepository.save(user);
-      console.log(suc);
+      await this.authRepository.save(user);
 
       return { message: 'Password reset successfully' };
     } catch (err) {
