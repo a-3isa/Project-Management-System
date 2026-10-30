@@ -1,97 +1,126 @@
 # Project Management System API
 
-A NestJS backend for managing projects, tasks and task comments, with JWT authentication, role-based access, and email OTP verification and password reset.
+A NestJS REST API for team project management: projects, tasks and comments, with Admin, Manager and Developer roles, JWT authentication, email verification codes and password reset by email.
+
+## Overview
+
+An Admin creates user accounts; each new user gets a 6-digit code by email to verify their address. Admins and Managers create projects, add users to them and create, update and delete tasks assigned to users. Everyone signed in can read projects and tasks and comment on tasks.
 
 ## Features
 
-- **Users**: admin-created registration, email verification by OTP, login, password reset
-- **Projects**: create, update, delete, and add members
-- **Tasks**: create tasks inside projects, assign them, list a user's tasks
-- **Comments**: discuss tasks
-- **Security**: JWT + Passport, role-based guards, DTO validation (class-validator)
-- **Email**: OTP and reset mails via `@nestjs-modules/mailer` with Pug templates
+- **Accounts:** Admins register users with a role; a 6-digit code (5 minutes) verifies the email; bcrypt-hashed passwords; JWT access tokens.
+- **Password reset:** a 15-minute reset link sent by email, usable once.
+- **Projects:** create (Admin, Manager), add users, list, read, update and delete (Admin, Manager).
+- **Tasks:** created inside a project and assigned to a user; update and delete need an Admin or Manager.
+- **Comments:** any signed-in user can comment on a task and read its comments.
+- **Protection:** validation that rejects unknown fields, and no passwords, codes or reset tokens in any response.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    client[Client] -->|JWT| api
+    subgraph api[NestJS API]
+        direction TB
+        guard[Global JWT guard,<br/>role checks in services] --> modules[Auth, users, projects,<br/>tasks, comments]
+    end
+    api -->|TypeORM| pg[(PostgreSQL)]
+    api -->|SMTP| mail[Mail server]
+```
 
 ## Tech stack
 
-NestJS, TypeScript, PostgreSQL, TypeORM, Passport/JWT, Nodemailer (Pug templates), Jest, ESLint, Prettier.
+NestJS 11, TypeScript, PostgreSQL with TypeORM, Passport JWT, bcrypt, class-validator, Nodemailer through `@nestjs-modules/mailer`, Jest, ESLint and Prettier.
 
 ## Getting started
 
-Prerequisites: Node.js 18+, PostgreSQL, an SMTP account (Mailtrap works for development).
+You need Node.js 20 or later (`.nvmrc` pins 22), PostgreSQL and an SMTP account (a Mailtrap sandbox works).
 
 ```bash
 git clone https://github.com/a-3isa/Project-Management-System
 cd Project-Management-System
-npm install
+npm ci
+cp .env.example .env                  # then fill in the values
+npm run start:dev                     # http://localhost:3000
 ```
 
-Create a database named `project-management-system`, then add a `.env` file in the project root:
+| Variable | Required | Purpose |
+|---|---|---|
+| `PORT` | no (3000) | HTTP port |
+| `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` | yes | PostgreSQL connection. TypeORM creates and updates the tables on start (`synchronize: true`). |
+| `JWT_SECRET` | yes | Signs and verifies tokens; the app will not start without it |
+| `JWT_EXPIRES_IN` | yes | Access-token lifetime, e.g. `1d` |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`, `MAIL_FROM` | yes | SMTP server for codes and reset links |
 
-```env
-PORT=3000
-JWT_SECRET=change-me
-JWT_EXPIRES_IN=3600
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=your_db_username
-DB_PASSWORD=your_db_password
-DB_NAME=project-management-system
-MAIL_HOST=smtp.mailtrap.io
-MAIL_PORT=2525
-MAIL_USER=your_mail_user
-MAIL_PASS=your_mail_pass
-MAIL_FROM=noreply@yourapp.com
-```
+**First admin.** Registering users needs an Admin, so create the first one in the database. Generate a bcrypt hash of the password, then insert it:
 
 ```bash
-npm run start:dev                      # development
-npm run build && npm run start:prod    # production
+node -e "console.log(require('bcrypt').hashSync(process.argv[1], 10))" 'Your-Passw0rd'
 ```
 
-The API runs on `http://localhost:3000`.
+```sql
+INSERT INTO "user" (email, password, role, "isVerified")
+VALUES ('admin@x.io', '<hash from above>', 'Admin', true);
+```
+
+For a production build: `npm run build`, then `npm run start:prod`.
 
 ## API
 
-**Auth**
-- `POST /auth/register` register a user (admin only)
-- `POST /auth/verify-otp` verify email with OTP
-- `POST /auth/login`
-- `POST /auth/forgot-password`
-- `POST /auth/reset-password`
+All routes need `Authorization: Bearer <token>` except login, forgot-password and reset-password. Log in with `{ email, password, role }`; the email field accepts at most 12 characters.
 
-**Users**
-- `GET /users/me`, `GET /users`, `GET /users/:id/tasks`, `DELETE /users/:id`
+| Area | Route | Who |
+|---|---|---|
+| Auth | `POST /auth/login`, `POST /auth/forgot-password` `{ email }`, `POST /auth/reset-password?token=` `{ password }` | Anyone |
+| | `POST /auth/register` `{ email, password, role }` | Admin |
+| | `POST /auth/verify-otp` `{ email, otp }` | Signed in |
+| Users | `GET /users/me`, `GET /users`, `GET /users/:id/tasks` | Signed in |
+| | `DELETE /users/:id` | Admin |
+| Projects | `GET /projects`, `GET /projects/:id` | Signed in |
+| | `POST /projects/create`, `POST /projects/:id/add-user/:userId`, `POST /projects/:projectId/tasks`, `PATCH /projects/:id`, `DELETE /projects/:id` | Admin, Manager |
+| Tasks | `GET /tasks/:id`, `POST /tasks/:taskId/comments`, `GET /tasks/:taskId/comments` | Signed in |
+| | `PATCH /tasks/:id`, `DELETE /tasks/:id` | Admin, Manager |
 
-**Projects**
-- `POST /projects/create`, `GET /projects`, `GET /projects/:id`, `PATCH /projects/:id`, `DELETE /projects/:id`
-- `POST /projects/:id/add-user/:userId`
-- `POST /projects/:projectId/tasks`
-
-**Tasks and comments**
-- `GET|PATCH|DELETE /tasks/:id`
-- `POST|GET /tasks/:taskId/comments`
-
-## Structure
+## Project structure
 
 ```
 src/
-  auth/      login, OTP, password reset, JWT strategy
-  user/      user entity and endpoints
-  project/   projects and membership
-  task/      tasks
-  comment/   task comments
+  auth/      login, registration, email codes, password reset, JWT strategy and guard
+  user/      users and roles
+  project/   projects and project membership
+  task/      tasks and their comments
+  comment/   comment entity
 ```
 
-Entities: User, Project, Task, Comment.
-
-## Testing
+## Testing and checks
 
 ```bash
-npm run test
-npm run test:e2e
-npm run test:cov
+npm test               # unit tests (Jest)
+npm run lint           # ESLint, no fixes applied
+npm run format:check   # Prettier
+npm run build
 ```
 
-## License
+The unit tests cover token checks, the role checks on projects and users, and that secrets never appear in a serialised user. `test/app.e2e-spec.ts` is still the NestJS starter test, so `npm run test:e2e` does not pass. CI runs lint, format check, build and unit tests on every pull request and on pushes to `main`.
 
-UNLICENSED.
+## Security notes
+
+- Tokens are signed and verified with `JWT_SECRET` and carry a type, so a reset token cannot be used to sign in. A token must name an existing user's email.
+- Passwords are hashed with bcrypt; passwords, verification codes and reset tokens are never returned or logged.
+- Verification codes come from a cryptographic random generator. Reset tokens are stored and accepted only once.
+- Role checks protect user creation and deletion, and project and task changes.
+- See [SECURITY.md](SECURITY.md) to report a vulnerability.
+
+## Known issues and roadmap
+
+These are bugs in the current code, recorded here rather than hidden:
+
+- Login does not check that the email was verified, and `verify-otp` needs a token, which a new user only gets from the registration response.
+- The email field is limited to 12 characters, which rejects most real addresses.
+- `forgot-password` reveals whether an email is registered, and there is no rate limit on login or code entry.
+- Emails are sent from a fixed demo sender address rather than `MAIL_FROM`.
+- Planned: rate limiting, real end-to-end tests, migrations instead of `synchronize`, and upgrades to `@nestjs-modules/mailer` 2 and nodemailer 10.
+
+## License and author
+
+UNLICENSED: the source is public for portfolio review, and no licence is granted to reuse it. Built by Ahmed Ibrahim Hussien ([a-3isa](https://github.com/a-3isa)).
