@@ -57,7 +57,7 @@ export class AuthService {
     // .catch((err) => {
     //   console.log(err);
     // });
-    const payload = { email };
+    const payload = { email, typ: 'access' };
     const accessToken: string = this.jwtService.sign(payload);
     return { accessToken, message: 'OTP sent to email' };
   }
@@ -90,7 +90,7 @@ export class AuthService {
 
     if (user && (await bcrypt.compare(password, user.password))) {
       console.log(password, user.password);
-      const payload = { email };
+      const payload = { email, typ: 'access' };
       const accessToken: string = this.jwtService.sign(payload);
       return { accessToken };
     }
@@ -104,7 +104,7 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     const token = this.jwtService.sign(
-      { email: user.email },
+      { email: user.email, typ: 'reset' },
       { secret: process.env.JWT_SECRET, expiresIn: '15m' },
     );
     user.resetToken = token;
@@ -133,6 +133,9 @@ export class AuthService {
       const payload = this.jwtService.verify(token, {
         secret: process.env.JWT_SECRET,
       });
+      if (payload.typ !== 'reset') {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
       const email = payload.email;
       const user = await this.authRepository.findOne({
         where: { email, resetToken: token },
