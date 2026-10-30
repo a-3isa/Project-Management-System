@@ -44,7 +44,7 @@ export class AuthService {
     }
 
     await this.mailerService.sendMail({
-      to: 'redacted@example.invalid',
+      to: email,
       from: 'smtp@demomailtrap.co',
       subject: 'Welcome to My App!',
       text: 'Thanks for registering. Please verify your email',
@@ -111,7 +111,7 @@ export class AuthService {
     await this.authRepository.save(user);
     const url = `http://localhost:3000/auth/reset-password?token=${token}`;
     await this.mailerService.sendMail({
-      to: 'redacted@example.invalid',
+      to: user.email,
       from: 'smtp@demomailtrap.co',
       subject: 'Reset your password',
       html: `<p>Click <a href="${url}">here</a> to reset your password. Link expires in 15 minutes.</p>`,
