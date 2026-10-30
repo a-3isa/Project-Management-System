@@ -15,7 +15,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
-import e from 'express';
 @Injectable()
 export class AuthService {
   constructor(
