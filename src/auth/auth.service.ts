@@ -9,12 +9,12 @@ import {
 } from '@nestjs/common';
 import { UserAuthDto } from './dto/create-auth.dto';
 import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
-import e from 'express';
 @Injectable()
 export class AuthService {
   constructor(
@@ -25,7 +25,7 @@ export class AuthService {
   ) {}
   async register(createUserDto: UserAuthDto, user: User) {
     if (user.role !== 'Admin') throw new UnauthorizedException();
-    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
+    const otp = randomInt(100000, 1000000).toString(); // 6 digits, from a CSPRNG
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 min
     const { email, password, role } = createUserDto;
     const salt = await bcrypt.genSalt();
@@ -44,7 +44,7 @@ export class AuthService {
     }
 
     await this.mailerService.sendMail({
-      to: 'redacted@example.invalid',
+      to: email,
       from: 'smtp@demomailtrap.co',
       subject: 'Welcome to My App!',
       text: 'Thanks for registering. Please verify your email',
@@ -57,7 +57,7 @@ export class AuthService {
     // .catch((err) => {
     //   console.log(err);
     // });
-    const payload = { email };
+    const payload = { email, typ: 'access' };
     const accessToken: string = this.jwtService.sign(payload);
     return { accessToken, message: 'OTP sent to email' };
   }
@@ -89,8 +89,7 @@ export class AuthService {
     });
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      console.log(password, user.password);
-      const payload = { email };
+      const payload = { email, typ: 'access' };
       const accessToken: string = this.jwtService.sign(payload);
       return { accessToken };
     }
@@ -104,7 +103,7 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     const token = this.jwtService.sign(
-      { email: user.email },
+      { email: user.email, typ: 'reset' },
       { secret: process.env.JWT_SECRET, expiresIn: '15m' },
     );
     user.resetToken = token;
@@ -112,7 +111,7 @@ export class AuthService {
     await this.authRepository.save(user);
     const url = `http://localhost:3000/auth/reset-password?token=${token}`;
     await this.mailerService.sendMail({
-      to: 'redacted@example.invalid',
+      to: user.email,
       from: 'smtp@demomailtrap.co',
       subject: 'Reset your password',
       html: `<p>Click <a href="${url}">here</a> to reset your password. Link expires in 15 minutes.</p>`,
@@ -133,6 +132,9 @@ export class AuthService {
       const payload = this.jwtService.verify(token, {
         secret: process.env.JWT_SECRET,
       });
+      if (payload.typ !== 'reset') {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
       const email = payload.email;
       const user = await this.authRepository.findOne({
         where: { email, resetToken: token },
@@ -145,14 +147,10 @@ export class AuthService {
       ) {
         throw new UnauthorizedException('Invalid or expired token');
       }
-      console.log(user.password);
-      console.log(newPassword);
       user.password = await bcrypt.hash(newPassword, 10);
-      console.log(user.password);
       user.resetToken = null;
       user.resetTokenExpiry = null;
-      const suc = await this.authRepository.save(user);
-      console.log(suc);
+      await this.authRepository.save(user);
 
       return { message: 'Password reset successfully' };
     } catch (err) {
