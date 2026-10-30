@@ -15,7 +15,6 @@ export class UserService {
 
   async findTasks(id: string) {
     const user = await this.userRepository.findOne({ where: { id } });
-    console.log(user);
     if (!user) throw new NotFoundException();
     return user.tasks;
   }
