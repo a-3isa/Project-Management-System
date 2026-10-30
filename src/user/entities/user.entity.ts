@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { Comment } from 'src/comment/entities/comment.entity';
 import { Project } from 'src/project/entities/project.entity';
 import { Task } from 'src/task/entities/task.entity';
@@ -21,21 +22,26 @@ export class User {
   email: string;
 
   @Column()
+  @Exclude()
   password: string;
 
   @Column({ default: false })
   isVerified: boolean;
 
   @Column({ type: 'varchar', nullable: true })
+  @Exclude()
   otp: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
+  @Exclude()
   otpExpiry: Date | null;
 
   @Column({ type: 'varchar', nullable: true })
+  @Exclude()
   resetToken: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
+  @Exclude()
   resetTokenExpiry: Date | null;
 
   @Column()
