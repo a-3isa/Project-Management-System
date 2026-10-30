@@ -87,7 +87,9 @@ export class ProjectService {
     return project;
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto) {
+  async update(id: string, updateProjectDto: UpdateProjectDto, author: User) {
+    if (author.role !== 'Admin' && author.role !== 'Manager')
+      throw new UnauthorizedException();
     const project = await this.projectRepository.findOne({ where: { id } });
     if (!project) {
       throw new NotFoundException('project not found');
@@ -96,7 +98,9 @@ export class ProjectService {
     return this.projectRepository.save(project);
   }
 
-  async remove(id: string) {
+  async remove(id: string, author: User) {
+    if (author.role !== 'Admin' && author.role !== 'Manager')
+      throw new UnauthorizedException();
     await this.projectRepository.delete(id);
   }
 }

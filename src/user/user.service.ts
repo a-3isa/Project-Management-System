@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 // import { UserDto } from './dto/user.dto';
 // import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -30,7 +34,8 @@ export class UserService {
   //   return `This action updates a #${id} user`;
   // }
 
-  remove(id: string) {
+  remove(id: string, author: User) {
+    if (author.role !== 'Admin') throw new UnauthorizedException();
     return this.userRepository.delete(id);
   }
 }
