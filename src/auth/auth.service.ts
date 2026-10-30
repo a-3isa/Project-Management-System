@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { UserAuthDto } from './dto/create-auth.dto';
 import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
@@ -25,7 +26,7 @@ export class AuthService {
   ) {}
   async register(createUserDto: UserAuthDto, user: User) {
     if (user.role !== 'Admin') throw new UnauthorizedException();
-    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
+    const otp = randomInt(100000, 1000000).toString(); // 6 digits, from a CSPRNG
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 min
     const { email, password, role } = createUserDto;
     const salt = await bcrypt.genSalt();
