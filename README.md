@@ -1,5 +1,8 @@
 # Project Management System API
 
+[![CI](https://github.com/a-3isa/Project-Management-System/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/a-3isa/Project-Management-System/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/language-TypeScript-3178c6.svg)
+
 A NestJS REST API for team project management: projects, tasks and comments, with Admin, Manager and Developer roles, JWT authentication, email verification codes and password reset by email.
 
 ## Overview
