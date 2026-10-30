@@ -1,18 +1,31 @@
 {
   "name": "project",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "NestJS project management API: projects, tasks and comments with Admin, Manager and Developer roles, JWT auth and email verification codes",
+  "author": "Ahmed Ibrahim Hussien (https://github.com/a-3isa)",
   "private": true,
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/a-3isa/Project-Management-System.git"
+  },
+  "homepage": "https://github.com/a-3isa/Project-Management-System#readme",
+  "bugs": {
+    "url": "https://github.com/a-3isa/Project-Management-System/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
